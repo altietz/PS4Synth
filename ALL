@@ -1,0 +1,85 @@
+
+HID.findAvailable; // check which devices are attached
+HID.postAvailable; // post the available devices
+~myhid = HID.open( 1356, 1476 ); // adapt this line for the device that you want to open!
+s.boot; // boot the server
+
+
+(
+SynthDef(\peep,{ |freq|
+	var env = Env.perc(level: 0.1, releasTime: 0.2).kr
+	(doneAction: Done.freeSelf);
+	var sig = Pulse.ar(freq: freq, width: 0.05) * env;
+	Out.ar(0,[sig,sig])
+}).add
+)
+
+(
+Pdef(\melody,
+	Pbind(
+		\instrument, \peep,
+		\dur, Pseq([0.5,1,0.5,0.5,0.5,0.5,0.5], inf),
+		\degree, Pseq([0,5,7,8,4,6,9], inf),
+		\scale, Scale.minor)
+).play(TempoClock.default, quant:4);
+)
+
+(
+SynthDef(\drum,{ |freq|
+	var env = Env.perc(level: 0.1, releasTime: 0.2).
+	kr(doneAction: Done.freeSelf);
+	var sig = WhiteNoise.ar * env;
+	var trigger = Impulse.ar(freq);
+	sig = Latch.ar(sig, trigger);
+	Out.ar(0,[sig, sig])
+}).add
+)
+
+Synth(\drum, [\freq, 20040])
+~bass = 300; ~snare=600;
+
+(
+Pdef(\drumbeat,
+	Pbind(
+		\instrument, \drum,
+		\dur, Pseq([1,1.5,0.5,0.5,0.5], inf),
+		\freq, Pseq([~bass, ~snare, ~bass, ~snare, ~bass], inf)
+	)
+).play(TempoClock.default, quant:4);
+)
+
+(
+SynthDef(\R1,{ |out|
+	Out.ar(out,
+		Pulse.ar(40 + [0,1] * Line.kr(1.1, 0.2, rrand(2, 3), doneAction: Done.freeSelf))*0.1
+	)
+}).add
+)
+
+(
+SynthDef(\R2,{ |out|
+	Out.ar(out,
+		Pulse.ar(80 + [0,1] * Line.kr(1.1, 0.4, rrand(2, 3), doneAction: Done.freeSelf))*0.1
+	)
+}).add
+)
+
+
+
+(
+HIDFunc.element({Synth(\peep,[\freq, 200])}, [0]);//square
+HIDFunc.element({Synth(\peep,[\freq, 220])}, [1]);//X
+HIDFunc.element({Synth(\peep,[\freq, 240])}, [2]);//O
+HIDFunc.element({Synth(\peep,[\freq, 260])}, [3]);//tri
+HIDFunc.element({Synth(\drum, [\freq, 10000])}, [4]); //L1
+HIDFunc.element({Synth(\R1)}, [5]); //R1
+HIDFunc.element({Synth(\drum, [\freq, 30000])}, [6]); //L2
+HIDFunc.element({Synth(\R2)}, [7]); //R2
+HIDFunc.element({Synth(\drum, [\freq, 3000])}, [8]); //Share
+HIDFunc.element({Synth(\drum, [\freq, 1000])}, [9]); //Options
+HIDFunc.element({Synth(\drum, [\freq, 10000])}, [10]); //L3
+HIDFunc.element({Synth(\drum, [\freq, 14000])}, [11]); //R3
+HIDFunc.element({Synth(\drum, [\freq, 20000])}, [13]); //Trackpad Button
+HIDFunc.element({Synth(\drum, [\freq, 20000])}, [18]);//direction buttons
+)
+
